@@ -1,0 +1,55 @@
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write
+
+jobs:
+  build-macos:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-apple-darwin,x86_64-apple-darwin
+
+      - uses: swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Build and publish release
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tagName: ${{ github.ref_name }}
+          releaseName: 'agent-quest ${{ github.ref_name }}'
+          releaseBody: |
+            macOS universal build (Apple Silicon + Intel).
+
+            **The app is not code-signed.** After installing, clear the
+            quarantine flag once:
+
+            ```
+            xattr -cr /Applications/agent-quest.app
+            ```
+
+            Then launch it and use the tray menu → "Install Claude Code hooks".
+          releaseDraft: false
+          prerelease: false
+          args: --target universal-apple-darwin

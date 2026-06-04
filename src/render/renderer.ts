@@ -117,6 +117,9 @@ export class Renderer {
 
   private decorations: HTMLCanvasElement | null = null;
 
+  /** Message shown when no heroes are on the strip (set by main.ts). */
+  hint = '';
+
   /** Find the hero at canvas x/y, for click handling. */
   heroAt(x: number, y: number): Hero | undefined {
     const groundTop = this.canvas.height - GROUND_HEIGHT;
@@ -279,6 +282,18 @@ export class Renderer {
       this.drawHero(hero, groundTop);
     }
     this.effects.draw(ctx, now);
+
+    // Empty-state hint: nothing on the strip yet → tell the user why.
+    if (this.heroes.size === 0 && this.hint) {
+      ctx.font = '12px monospace';
+      const w = ctx.measureText(this.hint).width + 16;
+      const x = canvas.width / 2 - w / 2;
+      const y = groundTop - 34;
+      ctx.fillStyle = 'rgba(20, 22, 30, 0.75)';
+      ctx.fillRect(x, y, w, 22);
+      ctx.fillStyle = '#cfd6e4';
+      ctx.fillText(this.hint, x + 8, y + 15);
+    }
 
     if (this.overflow > 0) {
       ctx.fillStyle = 'rgba(0,0,0,0.6)';

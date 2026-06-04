@@ -29,28 +29,48 @@ Each Claude Code session is one adventurer (named after its project directory):
 ## Requirements
 
 - macOS (primary target; window is a non-activating NSPanel)
-- Rust toolchain + pnpm
 - Claude Code
 
-## Setup
+## Install
+
+### Option 1: Download (recommended)
+
+1. Grab the latest `.dmg` from [Releases](https://github.com/zodius-chtsec/agent-quest/releases)
+2. Drag **agent-quest.app** into Applications
+3. The app is **not code-signed** — clear the quarantine flag once:
+   ```bash
+   xattr -cr /Applications/agent-quest.app
+   ```
+4. Launch it, then click the tray icon → **Install Claude Code hooks**
+5. Restart any running Claude Code sessions — heroes appear as they work
+
+### Option 2: Homebrew
 
 ```bash
+brew install --cask --no-quarantine zodius-chtsec/tap/agent-quest
+```
+
+### Option 3: From source
+
+```bash
+git clone https://github.com/zodius-chtsec/agent-quest && cd agent-quest
 pnpm install
-pnpm tauri build        # or: pnpm tauri dev
+pnpm tauri build        # needs Rust toolchain + pnpm
 ./src-tauri/target/release/agent-quest install-hooks
 ```
 
-`install-hooks` merges agent-quest hook entries into `~/.claude/settings.json`:
+## How hook installation works
+
+The tray "Install Claude Code hooks" (or the `install-hooks` CLI subcommand)
+merges agent-quest entries into `~/.claude/settings.json`:
 
 - **append-only** — your existing hooks are never modified or reordered
 - a timestamped backup is written to `~/.claude/backups/` first
 - the hook command is a forwarder script (`~/.claude/agent-quest-hook.sh`) that
   POSTs each event to `127.0.0.1:7777` with `--max-time 1` and always exits 0,
   so Claude Code is never blocked — even when agent-quest isn't running
-- `uninstall-hooks` removes exactly the entries it added
-
-Restart any running Claude Code sessions, then start the app. Heroes appear as
-sessions become active.
+- "Uninstall Claude Code hooks" / `uninstall-hooks` removes exactly the
+  entries it added
 
 ## Controls
 

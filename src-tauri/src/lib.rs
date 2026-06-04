@@ -15,7 +15,8 @@ pub fn run() {
         _ => {}
     }
 
-    let mut builder = tauri::Builder::default();
+    let mut builder = tauri::Builder::default()
+        .invoke_handler(tauri::generate_handler![hooks_installed]);
 
     #[cfg(target_os = "macos")]
     {
@@ -45,6 +46,13 @@ pub fn run() {
         })
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
+}
+
+/// Frontend query: are the Claude Code hooks installed? Drives the
+/// empty-state hint on the strip.
+#[tauri::command]
+fn hooks_installed() -> bool {
+    hooks_cli::is_installed()
 }
 
 fn exit_after(result: Result<(), String>) {

@@ -55,6 +55,15 @@ fn write_atomic(path: &PathBuf, value: &serde_json::Value) -> Result<(), String>
     Ok(())
 }
 
+/// Whether agent-quest hooks are currently present in settings.json.
+pub fn is_installed() -> bool {
+    let Ok(claude) = claude_dir() else { return false };
+    match read_settings(&claude.join("settings.json")) {
+        Ok(settings) => hooks_merge::is_fully_installed(&settings),
+        Err(_) => false,
+    }
+}
+
 pub fn install() -> Result<(), String> {
     let claude = claude_dir()?;
     let settings_path = claude.join("settings.json");

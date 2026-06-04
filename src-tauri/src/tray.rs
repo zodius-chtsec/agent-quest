@@ -7,7 +7,16 @@ use tauri::menu::{CheckMenuItem, Menu, MenuItem};
 use tauri::tray::TrayIconBuilder;
 use tauri::{AppHandle, Manager};
 
+use crate::hooks_cli;
 use crate::window;
+
+fn hooks_label(installed: bool) -> &'static str {
+    if installed {
+        "Uninstall Claude Code hooks"
+    } else {
+        "Install Claude Code hooks"
+    }
+}
 
 static INTERACTIVE: AtomicBool = AtomicBool::new(true);
 static DEMO: AtomicBool = AtomicBool::new(false);
@@ -20,8 +29,15 @@ pub fn setup(app: &AppHandle) -> tauri::Result<()> {
     let scenery =
         CheckMenuItem::with_id(app, "scenery", "Scenery background", true, false, None::<&str>)?;
     let redock = MenuItem::with_id(app, "redock", "Re-dock to bottom", true, None::<&str>)?;
+    let hooks = MenuItem::with_id(
+        app,
+        "hooks",
+        hooks_label(hooks_cli::is_installed()),
+        true,
+        None::<&str>,
+    )?;
     let quit = MenuItem::with_id(app, "quit", "Quit agent-quest", true, None::<&str>)?;
-    let menu = Menu::with_items(app, &[&interactive, &demo, &scenery, &redock, &quit])?;
+    let menu = Menu::with_items(app, &[&interactive, &demo, &scenery, &redock, &hooks, &quit])?;
 
     TrayIconBuilder::with_id("agent-quest-tray")
         .icon(app.default_window_icon().expect("bundled icon").clone())
@@ -67,6 +83,29 @@ pub fn setup(app: &AppHandle) -> tauri::Result<()> {
                 if let Some(win) = app.get_webview_window(window::STRIP_LABEL) {
                     if let Err(err) = window::dock_to_primary(&win) {
                         eprintln!("[tray] re-dock failed: {err}");
+                    }
+                }
+            }
+            "hooks" => {
+                let result = if hooks_cli::is_installed() {
+                    hooks_cli::uninstall()
+                } else {
+                    hooks_cli::install()
+                };
+                match result {
+                    Ok(()) => {
+                        let _ = hooks.set_text(hooks_label(hooks_cli::is_installed()));
+                        // Nudge the frontend to refresh its empty-state hint.
+                        if let Some(win) = app.get_webview_window(window::STRIP_LABEL) {
+                            let installed = hooks_cli::is_installed();
+                            let _ = win.eval(format!(
+                                "window.dispatchEvent(new CustomEvent('hooks-status', {{ detail: {installed} }}))"
+                            ));
+                        }
+                    }
+                    Err(err) => {
+                        eprintln!("[tray] hooks operation failed: {err}");
+                        let _ = hooks.set_text("Hooks: failed (see logs)");
                     }
                 }
             }

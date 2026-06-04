@@ -89,6 +89,21 @@ declare global {
   }
 }
 
+function updateHint(hooksInstalled: boolean): void {
+  renderer.hint = hooksInstalled
+    ? 'waiting for Claude Code activity…'
+    : 'hooks not installed — tray icon → Install Claude Code hooks';
+}
+
+if (window.__TAURI_INTERNALS__) {
+  import('@tauri-apps/api/core').then(({ invoke }) => {
+    void invoke<boolean>('hooks_installed').then(updateHint);
+  });
+  window.addEventListener('hooks-status', (e) => {
+    updateHint(Boolean((e as CustomEvent).detail));
+  });
+}
+
 if (window.__TAURI_INTERNALS__) {
   import('@tauri-apps/api/event').then(({ listen }) => {
     void listen<unknown>('hook', (e) => {
