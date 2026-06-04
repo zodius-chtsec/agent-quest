@@ -5,6 +5,9 @@ const host = process.env.TAURI_DEV_HOST;
 
 // https://vite.dev/config/
 export default defineConfig(async () => ({
+  // Serve the (gitignored) art packs + committed atlas JSON at /…
+  // e.g. assets/sprites/tiny-swords/X.png → /sprites/tiny-swords/X.png
+  publicDir: "assets",
 
   // Vite options tailored for Tauri development and only applied in `tauri dev` or `tauri build`
   //

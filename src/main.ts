@@ -46,6 +46,13 @@ setInterval(() => {
 
 renderer.start();
 
+// Best-effort: load real art pack skins (Tiny Swords) if installed.
+import('./render/heroSkins').then(({ loadHeroSkins }) => {
+  void loadHeroSkins().then((count) => {
+    if (count > 0) console.info(`[skins] loaded ${count} hero atlas(es)`);
+  });
+});
+
 canvas.addEventListener('click', (e) => {
   const hero = renderer.heroAt(e.offsetX, e.offsetY);
   if (hero) showPopup(hero.session, hero.x + hero.width / 2);

@@ -5,13 +5,32 @@
  */
 
 import { Hero } from '../hero/hero';
-import type { MonsterInfo, SessionInfo } from '../types';
+import type { HeroState, MonsterInfo, SessionInfo } from '../types';
 import { Effects } from './effects';
+import { skinFor } from './heroSkins';
 import { assignSlots, overflowCount, type SlotAssignment } from './layout';
 import { MonsterEntity, MONSTER_OFFSET } from './monsterEntity';
 import { monsterSprites } from './monsterSprites';
 import { bodyForState, HAND_X, HAND_Y, HERO_SIZE } from './sprites';
+import { drawAtlasFrame, type Atlas } from './spritesheet';
 import { GROUND_HEIGHT, renderTerrain } from './terrain';
+
+/** Map hero state to an atlas animation, with graceful fallbacks. */
+function atlasAnimForState(state: HeroState, walking: boolean, atlas: Atlas): string {
+  const pick = (...names: string[]) => names.find((n) => atlas.anims[n]) ?? 'idle';
+  if (walking) return pick('walk', 'run', 'idle');
+  switch (state) {
+    case 'WORKING':
+      return pick('attack', 'idle');
+    case 'HURT':
+      return pick('hurt', 'guard', 'idle');
+    case 'ATTENTION':
+      // Defensive stance while waiting for the user's permission.
+      return pick('guard', 'idle');
+    default:
+      return pick('idle');
+  }
+}
 
 const TARGET_FRAME_MS = 1000 / 30;
 const IDLE_FRAME_MS = 500;
@@ -226,6 +245,30 @@ export class Renderer {
     const topY = feetY - size;
     const walking = hero.walking;
 
+    // Real art pack skin takes priority; procedural pixel art is the
+    // always-available fallback.
+    const skin = skinFor(hero.id);
+    if (skin) {
+      const anim = atlasAnimForState(s.state, walking, skin);
+      // Frame height such that the character body reads ~1.5x the
+      // procedural heroes; anchorY plants the feet on the ground line.
+      const targetH = size * 3.2;
+      drawAtlasFrame(
+        ctx,
+        skin,
+        anim,
+        hero.animClock,
+        hero.x + size / 2,
+        feetY,
+        targetH,
+        hero.facing === -1,
+      );
+      const bodyTopY = feetY - targetH * (skin.anchorY - skin.bodyTop);
+      this.drawHeroBadges(hero, bodyTopY, feetY);
+      this.drawNameTag(hero, bodyTopY);
+      return;
+    }
+
     const bodyKey = bodyForState(s.state, walking);
     const frames = hero.sprites.bodies[bodyKey];
     const frameMs = walking ? WALK_FRAME_MS : IDLE_FRAME_MS;
@@ -255,8 +298,16 @@ export class Renderer {
     }
     ctx.restore();
 
-    // Campfire next to an idle hero.
-    if (s.state === 'IDLE' && !walking) {
+    this.drawHeroBadges(hero, topY, feetY);
+    this.drawNameTag(hero, topY);
+  }
+
+  /** State badges shared by both skin paths: campfire/zzz and attention. */
+  private drawHeroBadges(hero: Hero, topY: number, feetY: number): void {
+    const { ctx } = this;
+    const s = hero.session;
+    const size = hero.width;
+    if (s.state === 'IDLE' && !hero.walking) {
       const fire = hero.sprites.campfire[hero.frame(2, 400)];
       ctx.drawImage(fire, hero.x - fire.width - 6, feetY - fire.height);
       ctx.fillStyle = 'rgba(255,255,255,0.7)';
@@ -264,14 +315,10 @@ export class Renderer {
       const zPhase = hero.frame(3, 600);
       ctx.fillText('z'.repeat(zPhase + 1), hero.x + size * 0.7, topY - 4 - zPhase * 2);
     }
-
-    // Attention mark: blinking exclamation above the head.
     if (s.state === 'ATTENTION' && hero.frame(2, 300) === 0) {
       const mark = hero.sprites.attention;
       ctx.drawImage(mark, hero.x + size / 2 - mark.width / 2, topY - mark.height - 4);
     }
-
-    this.drawNameTag(hero, topY);
   }
 
   private drawMonster(monster: MonsterEntity, groundTop: number, _now: number): void {

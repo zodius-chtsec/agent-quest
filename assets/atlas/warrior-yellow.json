@@ -1,0 +1,28 @@
+{
+  "frameW": 192,
+  "frameH": 192,
+  "anims": {
+    "idle": {
+      "image": "/sprites/tiny-swords/free-pack/Units/Yellow%20Units/Warrior/Warrior_Idle.png",
+      "frames": 8,
+      "fps": 6
+    },
+    "walk": {
+      "image": "/sprites/tiny-swords/free-pack/Units/Yellow%20Units/Warrior/Warrior_Run.png",
+      "frames": 6,
+      "fps": 10
+    },
+    "attack": {
+      "image": "/sprites/tiny-swords/free-pack/Units/Yellow%20Units/Warrior/Warrior_Attack1.png",
+      "frames": 4,
+      "fps": 10
+    },
+    "guard": {
+      "image": "/sprites/tiny-swords/free-pack/Units/Yellow%20Units/Warrior/Warrior_Guard.png",
+      "frames": 6,
+      "fps": 8
+    }
+  },
+  "anchorY": 0.708,
+  "bodyTop": 0.25
+}
