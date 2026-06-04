@@ -12,11 +12,35 @@ pub const DEFAULT_PORT: u16 = 7777;
 /// Fallback ports if the default is taken by another process.
 pub const PORT_RANGE: std::ops::RangeInclusive<u16> = 7777..=7782;
 
+#[derive(Clone)]
+struct ServerState {
+    app: AppHandle,
+    /// cwd prefixes whose events are dropped (AGENT_QUEST_IGNORE_CWD,
+    /// comma-separated). Lets users hide e.g. agent-quest's own dev session.
+    ignored_cwds: std::sync::Arc<Vec<String>>,
+}
+
+fn ignored_cwds_from_env() -> Vec<String> {
+    std::env::var("AGENT_QUEST_IGNORE_CWD")
+        .map(|raw| {
+            raw.split(',')
+                .map(|s| s.trim().to_string())
+                .filter(|s| !s.is_empty())
+                .collect()
+        })
+        .unwrap_or_default()
+}
+
 async fn handle_hook(
-    State(app): State<AppHandle>,
+    State(state): State<ServerState>,
     Json(payload): Json<serde_json::Value>,
 ) -> StatusCode {
-    if let Err(err) = app.emit("hook", &payload) {
+    if let Some(cwd) = payload["cwd"].as_str() {
+        if state.ignored_cwds.iter().any(|p| cwd.starts_with(p.as_str())) {
+            return StatusCode::OK;
+        }
+    }
+    if let Err(err) = state.app.emit("hook", &payload) {
         eprintln!("[server] emit failed: {err}");
         return StatusCode::INTERNAL_SERVER_ERROR;
     }
@@ -40,10 +64,14 @@ pub fn start(app: AppHandle) -> std::io::Result<u16> {
             .build()
             .expect("tokio runtime");
         runtime.block_on(async move {
+            let state = ServerState {
+                app,
+                ignored_cwds: std::sync::Arc::new(ignored_cwds_from_env()),
+            };
             let router = Router::new()
                 .route("/hook", post(handle_hook))
                 .route("/health", get(handle_health))
-                .with_state(app);
+                .with_state(state);
             let listener = tokio::net::TcpListener::from_std(listener)
                 .expect("tcp listener");
             if let Err(err) = axum::serve(listener, router).await {

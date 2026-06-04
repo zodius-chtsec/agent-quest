@@ -17,3 +17,26 @@ body {
   height: 100%;
   image-rendering: pixelated;
 }
+
+.hero-popup {
+  position: fixed;
+  top: 6px;
+  background: rgba(20, 22, 30, 0.92);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-radius: 4px;
+  padding: 6px 10px;
+  font: 11px monospace;
+  color: #eee;
+  max-width: 360px;
+  pointer-events: none;
+}
+
+.hero-popup .k {
+  display: inline-block;
+  width: 60px;
+  color: #8fa;
+}
+
+.hero-popup .v {
+  word-break: break-all;
+}

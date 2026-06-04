@@ -1,5 +1,6 @@
 import { startDemo } from './demo';
 import { Renderer } from './render/renderer';
+import { hidePopup, showPopup } from './ui/popup';
 import {
   applyEvent,
   remove,
@@ -29,6 +30,12 @@ setInterval(() => {
 }, 5_000);
 
 renderer.start();
+
+canvas.addEventListener('click', (e) => {
+  const hero = renderer.heroAt(e.offsetX, e.offsetY);
+  if (hero) showPopup(hero.session, hero.x + hero.width / 2);
+  else hidePopup();
+});
 
 const params = new URLSearchParams(window.location.search);
 if (params.get('demo') === '1') {
