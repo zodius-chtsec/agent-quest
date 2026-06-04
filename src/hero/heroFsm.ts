@@ -3,8 +3,15 @@ import type { HeroState, QuestEvent } from '../types';
 /**
  * Pure hero state transition. Time-driven transitions (HURT recovery,
  * LEAVING walk-off, GC eviction) are handled by the entity layer, not here.
+ *
+ * `fullyIdle` only matters for 'stop': background tasks still running →
+ * the hero keeps watch instead of going to sleep.
  */
-export function nextState(state: HeroState, event: QuestEvent['kind']): HeroState {
+export function nextState(
+  state: HeroState,
+  event: QuestEvent['kind'],
+  fullyIdle = true,
+): HeroState {
   switch (event) {
     case 'session-start':
       return state === 'LEAVING' ? 'ARRIVING' : state;
@@ -18,7 +25,7 @@ export function nextState(state: HeroState, event: QuestEvent['kind']): HeroStat
     case 'permission':
       return 'ATTENTION';
     case 'stop':
-      return 'IDLE';
+      return fullyIdle ? 'IDLE' : 'WATCHING';
     case 'session-end':
       return 'LEAVING';
     case 'notification':

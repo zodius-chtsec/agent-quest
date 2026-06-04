@@ -35,6 +35,7 @@ export function parseHook(raw: unknown): QuestEvent | null {
   if (!kind) return null;
 
   const backgroundTasks = payload.background_tasks;
+  const bgCount = Array.isArray(backgroundTasks) ? backgroundTasks.length : 0;
   return {
     kind,
     sessionId,
@@ -42,9 +43,7 @@ export function parseHook(raw: unknown): QuestEvent | null {
     tool: asString(payload.tool_name),
     agentId: asString(payload.agent_id),
     agentType: asString(payload.agent_type),
-    fullyIdle:
-      kind === 'stop'
-        ? !Array.isArray(backgroundTasks) || backgroundTasks.length === 0
-        : undefined,
+    fullyIdle: kind === 'stop' ? bgCount === 0 : undefined,
+    bgTasks: kind === 'stop' ? bgCount : undefined,
   };
 }

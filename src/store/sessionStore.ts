@@ -11,6 +11,11 @@ import type { QuestEvent, SessionInfo } from '../types';
 export const SESSION_TTL_MS = 120_000;
 /** Companions are short-lived; evict faster. */
 export const COMPANION_TTL_MS = 60_000;
+/**
+ * WATCHING sessions are silent BY DESIGN (no hooks fire while a background
+ * monitor runs), so they get a much longer leash.
+ */
+export const WATCHING_TTL_MS = 30 * 60_000;
 /** HURT is a transient flinch; recover to WORKING after this. */
 export const HURT_RECOVERY_MS = 2_000;
 
@@ -36,6 +41,7 @@ function createSession(event: QuestEvent, now: number): SessionInfo {
     state: initialState(),
     action: 'generic',
     currentTool: undefined,
+    bgTasks: 0,
     lastSeen: now,
     startedAt: now,
   };
@@ -55,13 +61,14 @@ export function applyEvent(sessions: SessionMap, event: QuestEvent, now: number)
   }
 
   const existing = next.get(key) ?? createSession(event, now);
-  const state = nextState(existing.state, event.kind);
+  const state = nextState(existing.state, event.kind, event.fullyIdle ?? true);
   const isToolEvent = event.kind === 'pre-tool';
   next.set(key, {
     ...existing,
     state,
     action: isToolEvent ? actionForTool(event.tool) : existing.action,
     currentTool: isToolEvent ? event.tool : existing.currentTool,
+    bgTasks: event.kind === 'stop' ? (event.bgTasks ?? 0) : existing.bgTasks,
     lastSeen: now,
   });
   return next;
@@ -77,7 +84,12 @@ export function tick(sessions: SessionMap, now: number): SessionMap {
       changed = true;
       continue;
     }
-    const ttl = s.isCompanion ? COMPANION_TTL_MS : SESSION_TTL_MS;
+    const ttl =
+      s.state === 'WATCHING'
+        ? WATCHING_TTL_MS
+        : s.isCompanion
+          ? COMPANION_TTL_MS
+          : SESSION_TTL_MS;
     if (s.state !== 'LEAVING' && now - s.lastSeen > ttl) {
       next.set(key, { ...s, state: 'LEAVING' });
       changed = true;

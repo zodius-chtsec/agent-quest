@@ -33,12 +33,16 @@ describe('parseHook', () => {
     expect(event?.agentType).toBe('Explore');
   });
 
-  it('derives fullyIdle from background_tasks on Stop', () => {
+  it('derives fullyIdle and bgTasks from background_tasks on Stop', () => {
     expect(parseHook({ ...base, hook_event_name: 'Stop', background_tasks: [] })?.fullyIdle).toBe(true);
     expect(parseHook({ ...base, hook_event_name: 'Stop' })?.fullyIdle).toBe(true);
-    expect(
-      parseHook({ ...base, hook_event_name: 'Stop', background_tasks: [{ id: 1 }] })?.fullyIdle,
-    ).toBe(false);
+    const busy = parseHook({
+      ...base,
+      hook_event_name: 'Stop',
+      background_tasks: [{ id: 1 }, { id: 2 }],
+    });
+    expect(busy?.fullyIdle).toBe(false);
+    expect(busy?.bgTasks).toBe(2);
   });
 
   it('rejects unknown events and malformed payloads', () => {

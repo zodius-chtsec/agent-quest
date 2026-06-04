@@ -7,6 +7,7 @@ import {
   remove,
   SESSION_TTL_MS,
   tick,
+  WATCHING_TTL_MS,
   type SessionMap,
 } from './sessionStore';
 import type { QuestEvent } from '../types';
@@ -61,6 +62,20 @@ describe('sessionStore', () => {
     sessions = applyEvent(sessions, ev({ kind: 'subagent-stop', agentId: 'a1' }), T0 + 100);
     expect(sessions.get('s1:a1')!.state).toBe('LEAVING');
     expect(sessions.get('s1')!.state).not.toBe('LEAVING');
+  });
+
+  it('WATCHING: stop with bg tasks keeps watch with long TTL', () => {
+    let sessions = applyEvent(new Map(), ev({ kind: 'pre-tool', tool: 'Bash' }), T0);
+    sessions = applyEvent(sessions, ev({ kind: 'stop', fullyIdle: false, bgTasks: 3 }), T0 + 10);
+    const s = sessions.get('s1')!;
+    expect(s.state).toBe('WATCHING');
+    expect(s.bgTasks).toBe(3);
+    // Outlives the normal session TTL...
+    sessions = tick(sessions, T0 + 10 + SESSION_TTL_MS + 1);
+    expect(sessions.get('s1')!.state).toBe('WATCHING');
+    // ...but not the watching TTL.
+    sessions = tick(sessions, T0 + 10 + WATCHING_TTL_MS + 1);
+    expect(sessions.get('s1')!.state).toBe('LEAVING');
   });
 
   it('GC: silent sessions transition to LEAVING after TTL', () => {

@@ -208,6 +208,10 @@ const CAMPFIRE_B = [
 
 const MARK_ATTENTION = ['RR', 'RR', 'RR', 'RR', '..', 'RR'];
 
+// Gold hourglass for the WATCHING state (sand flips between frames).
+const MARK_WATCH_A = ['GGGGG', 'GfffG', '.GfG.', '..G..', '.G.G.', 'G...G', 'GGGGG'];
+const MARK_WATCH_B = ['GGGGG', 'G...G', '.G.G.', '..G..', '.GfG.', 'GfffG', 'GGGGG'];
+
 export interface RenderedItem {
   readonly frames: HTMLCanvasElement[];
   /** Grip offset in scaled pixels; pin this point to the hero's hand. */
@@ -220,6 +224,7 @@ export interface SpriteSet {
   readonly items: Partial<Record<HeroAction, RenderedItem>>;
   readonly campfire: HTMLCanvasElement[];
   readonly attention: HTMLCanvasElement;
+  readonly watch: HTMLCanvasElement[];
 }
 
 /** Build the full sprite set for a hero, tinting armor with `accent`. */
@@ -250,6 +255,7 @@ export function buildSpriteSet(accent: string): SpriteSet {
     },
     campfire: [r(CAMPFIRE_A), r(CAMPFIRE_B)],
     attention: r(MARK_ATTENTION),
+    watch: [r(MARK_WATCH_A), r(MARK_WATCH_B)],
   };
 }
 

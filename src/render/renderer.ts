@@ -397,6 +397,16 @@ export class Renderer {
       const mark = hero.sprites.attention;
       ctx.drawImage(mark, hero.x + size / 2 - mark.width / 2, topY - mark.height - 4);
     }
+    // Keeping watch over background tasks: campfire stays lit, no zzz,
+    // a gold hourglass flips above the hero's head.
+    if (s.state === 'WATCHING' && !hero.walking) {
+      const fire = campfireAtlas();
+      if (fire) {
+        drawAtlasFrame(ctx, fire, 'burn', hero.animClock, hero.x - 26, feetY, 40, false);
+      }
+      const mark = hero.sprites.watch[hero.frame(2, 900)];
+      ctx.drawImage(mark, hero.x + size / 2 - mark.width / 2, topY - mark.height - 4);
+    }
   }
 
   private drawMonster(monster: MonsterEntity, groundTop: number, _now: number): void {
@@ -464,7 +474,8 @@ export class Renderer {
     const s = hero.session;
     const label = s.isCompanion ? (s.agentType ?? 'companion') : s.projectName;
     const tool = s.state === 'WORKING' && s.currentTool ? ` ${s.currentTool}` : '';
-    const text = `${label}${tool}`;
+    const watching = s.state === 'WATCHING' && s.bgTasks > 0 ? ` ⏳${s.bgTasks}` : '';
+    const text = `${label}${tool}${watching}`;
     ctx.font = `${s.isCompanion ? 9 : 10}px monospace`;
     const w = ctx.measureText(text).width + 8;
     const x = hero.x + hero.width / 2 - w / 2;

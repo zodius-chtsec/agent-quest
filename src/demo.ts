@@ -33,6 +33,8 @@ interface Profile {
   readonly failsSometimes: boolean;
   readonly asksPermission: boolean;
   readonly summonsCompanion: boolean;
+  /** Mid-quest, stop with running background tasks (WATCHING state). */
+  readonly watchesBackground?: boolean;
 }
 
 function runSession(emit: Emit, id: string, profile: Profile): void {
@@ -41,12 +43,26 @@ function runSession(emit: Emit, id: string, profile: Profile): void {
 
   let hitsThisQuest = 0;
   let resting = false;
+  let watched = false;
 
   setInterval(() => {
     if (resting) return;
 
     hitsThisQuest++;
     if (hitsThisQuest > profile.questLength) {
+      // Once per quest: pause with background tasks running — hero keeps
+      // watch by the fire, monster lurks, then the fight resumes.
+      if (profile.watchesBackground && !watched) {
+        watched = true;
+        emit(ev({ kind: 'stop', sessionId: id, fullyIdle: false, bgTasks: 2 }));
+        resting = true;
+        hitsThisQuest = profile.questLength - 2;
+        setTimeout(() => {
+          resting = false;
+        }, profile.restMs * 3);
+        return;
+      }
+      watched = false;
       // Quest complete: kill the monster, rest, then take a new quest.
       if (profile.summonsCompanion) {
         emit(ev({ kind: 'subagent-stop', sessionId: id, agentId: `${id}-sub` }));
@@ -93,8 +109,9 @@ export function startDemo(emit: Emit): void {
     ['epic-quest', { pace: 900, questLength: 45, restMs: 3000, failsSometimes: false, asksPermission: false, summonsCompanion: false }],
     // Clumsy: fails regularly (counterattacks + hurt animation).
     ['flaky-ci', { pace: 1600, questLength: 12, restMs: 2500, failsSometimes: true, asksPermission: false, summonsCompanion: false }],
-    // Cautious: pauses for permission mid-fight.
-    ['prod-deploy', { pace: 1800, questLength: 10, restMs: 3000, failsSometimes: false, asksPermission: true, summonsCompanion: false }],
+    // Cautious: pauses for permission mid-fight, and keeps watch over
+    // background tasks before finishing.
+    ['prod-deploy', { pace: 1800, questLength: 10, restMs: 3000, failsSometimes: false, asksPermission: true, summonsCompanion: false, watchesBackground: true }],
     // Party: summons a companion that shares the fight.
     ['data-pipeline', { pace: 1400, questLength: 14, restMs: 2500, failsSometimes: false, asksPermission: false, summonsCompanion: true }],
     // Mixed bag.

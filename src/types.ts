@@ -3,6 +3,8 @@ export type HeroState =
   | 'ARRIVING'
   | 'IDLE'
   | 'WORKING'
+  /** Turn ended but background tasks (monitors, bg shells) are running. */
+  | 'WATCHING'
   | 'ATTENTION'
   | 'HURT'
   | 'LEAVING';
@@ -33,6 +35,8 @@ export interface QuestEvent {
   readonly agentType?: string;
   /** Stop event: true when no background tasks remain. */
   readonly fullyIdle?: boolean;
+  /** Stop event: number of still-running background tasks. */
+  readonly bgTasks?: number;
 }
 
 /** Monster evolution tiers: slime → goblin → ogre → dragon. */
@@ -73,6 +77,8 @@ export interface SessionInfo {
   readonly state: HeroState;
   readonly action: HeroAction;
   readonly currentTool?: string;
+  /** Running background tasks (only meaningful in WATCHING). */
+  readonly bgTasks: number;
   readonly lastSeen: number;
   readonly startedAt: number;
 }

@@ -105,6 +105,14 @@ describe('applyMonsterEvent', () => {
     expect(monsters.get('s1')).toMatchObject({ state: 'DYING', diedAt: T0 + 60 });
   });
 
+  it('stop with background tasks keeps the monster lurking', () => {
+    let monsters = fight(5);
+    monsters = applyMonsterEvent(monsters, ev({ kind: 'stop', fullyIdle: false }), T0 + 50);
+    expect(monsters.get('s1')!.state).toBe('FIGHTING');
+    monsters = applyMonsterEvent(monsters, ev({ kind: 'stop', fullyIdle: true }), T0 + 60);
+    expect(monsters.get('s1')!.state).toBe('DYING');
+  });
+
   it('tool-fail records a counterattack', () => {
     let monsters = fight(2);
     monsters = applyMonsterEvent(monsters, ev({ kind: 'tool-fail', tool: 'Bash' }), T0 + 30);

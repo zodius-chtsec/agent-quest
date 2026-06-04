@@ -14,6 +14,7 @@ function session(id: string, startedAt: number, companion = false, parentId?: st
     state: 'WORKING',
     action: 'generic',
     currentTool: undefined,
+    bgTasks: 0,
     lastSeen: startedAt,
     startedAt,
   };

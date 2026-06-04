@@ -27,6 +27,15 @@ describe('heroFsm.nextState', () => {
     expect(nextState(state, event)).toBe(expected);
   });
 
+  it('stop with background tasks → WATCHING; resumes to WORKING', () => {
+    expect(nextState('WORKING', 'stop', false)).toBe('WATCHING');
+    expect(nextState('WORKING', 'stop', true)).toBe('IDLE');
+    expect(nextState('WORKING', 'stop')).toBe('IDLE'); // default fullyIdle
+    expect(nextState('WATCHING', 'pre-tool')).toBe('WORKING');
+    expect(nextState('WATCHING', 'stop', true)).toBe('IDLE');
+    expect(nextState('WATCHING', 'session-end')).toBe('LEAVING');
+  });
+
   it('ignores informational events', () => {
     for (const kind of ['notification', 'subagent-start', 'subagent-stop'] as const) {
       expect(nextState('WORKING', kind)).toBe('WORKING');

@@ -106,6 +106,9 @@ export function applyMonsterEvent(
     case 'stop': {
       // Subagent Stop events don't end the main fight.
       if (event.agentId) return monsters;
+      // Background tasks still running → the quest isn't over; the monster
+      // lurks while the hero keeps watch.
+      if (event.fullyIdle === false) return monsters;
       if (!existing || existing.state !== 'FIGHTING') return monsters;
       const next = new Map(monsters);
       next.set(key, { ...existing, state: 'DYING', diedAt: now });
