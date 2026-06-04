@@ -1,24 +1,55 @@
-// Phase 1 placeholder: draw a translucent ground bar so the docked strip is
-// visible. Replaced by the real render engine in Phase 2.
+import { startDemo } from './demo';
+import { Renderer } from './render/renderer';
+import {
+  applyEvent,
+  remove,
+  tick,
+  type SessionMap,
+} from './store/sessionStore';
+import type { QuestEvent } from './types';
 
 const canvas = document.getElementById('strip') as HTMLCanvasElement;
-const ctx = canvas.getContext('2d')!;
 
-function resize(): void {
-  canvas.width = window.innerWidth;
-  canvas.height = window.innerHeight;
-  draw();
+let sessions: SessionMap = new Map();
+
+function emit(event: QuestEvent): void {
+  sessions = applyEvent(sessions, event, Date.now());
 }
 
-function draw(): void {
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-  const groundH = 48;
-  ctx.fillStyle = 'rgba(60, 120, 60, 0.85)';
-  ctx.fillRect(0, canvas.height - groundH, canvas.width, groundH);
-  ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
-  ctx.font = '14px monospace';
-  ctx.fillText('agent-quest strip (phase 1)', 16, canvas.height - groundH / 2 + 5);
+const renderer = new Renderer(
+  canvas,
+  () => [...sessions.values()],
+  (id) => {
+    sessions = remove(sessions, id);
+  },
+);
+
+setInterval(() => {
+  sessions = tick(sessions, Date.now());
+}, 5_000);
+
+renderer.start();
+
+const params = new URLSearchParams(window.location.search);
+if (params.get('demo') === '1') {
+  startDemo(emit);
 }
 
-window.addEventListener('resize', resize);
-resize();
+// Real hook events arrive via the Rust side (Phase 3): listen when running
+// inside Tauri; skip silently in a plain browser tab.
+declare global {
+  interface Window {
+    __TAURI_INTERNALS__?: unknown;
+  }
+}
+
+if (window.__TAURI_INTERNALS__) {
+  import('@tauri-apps/api/event').then(({ listen }) => {
+    void listen<unknown>('hook', (e) => {
+      void import('./bus/parseHook').then(({ parseHook }) => {
+        const event = parseHook(e.payload);
+        if (event) emit(event);
+      });
+    });
+  });
+}
