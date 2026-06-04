@@ -13,8 +13,9 @@ import { MonsterEntity, MONSTER_OFFSET } from './monsterEntity';
 import { monsterSkin } from './monsterSkins';
 import { monsterSprites } from './monsterSprites';
 import { bodyForState, HAND_X, HAND_Y, HERO_SIZE } from './sprites';
+import { drawScenery } from './scenery';
 import { drawAtlasFrame, type Atlas } from './spritesheet';
-import { GROUND_HEIGHT, renderTerrain } from './terrain';
+import { drawIsland, GROUND_HEIGHT, renderDecorations, renderTerrain } from './terrain';
 
 /** Map hero state to an atlas animation, with graceful fallbacks. */
 function atlasAnimForState(state: HeroState, walking: boolean, atlas: Atlas): string {
@@ -89,8 +90,16 @@ export class Renderer {
     this.canvas.width = window.innerWidth;
     this.canvas.height = window.innerHeight;
     this.ctx.imageSmoothingEnabled = false;
-    this.terrain = renderTerrain(this.canvas.width);
+    this.rebuildTerrain();
   }
+
+  /** Re-bake ground + decorations (also called once art finishes loading). */
+  rebuildTerrain(): void {
+    this.terrain = renderTerrain(this.canvas.width);
+    this.decorations = renderDecorations(this.canvas.width, this.canvas.height);
+  }
+
+  private decorations: HTMLCanvasElement | null = null;
 
   /** Find the hero at canvas x/y, for click handling. */
   heroAt(x: number, y: number): Hero | undefined {
@@ -219,6 +228,9 @@ export class Renderer {
     const groundTop = canvas.height - GROUND_HEIGHT;
     const now = performance.now();
     ctx.clearRect(0, 0, canvas.width, canvas.height);
+    drawScenery(ctx, canvas.width, canvas.height);
+    if (this.decorations) ctx.drawImage(this.decorations, 0, 0);
+    drawIsland(ctx, canvas.width, now);
     ctx.drawImage(this.terrain, 0, groundTop);
 
     for (const monster of this.monsters.values()) {

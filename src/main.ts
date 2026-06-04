@@ -58,6 +58,14 @@ import('./render/monsterSkins').then(({ loadMonsterSkins }) => {
     if (ok) console.info('[skins] monster atlases loaded');
   });
 });
+import('./render/terrain').then(({ loadTerrainArt }) => {
+  void loadTerrainArt().then((ok) => {
+    if (ok) renderer.rebuildTerrain();
+  });
+});
+import('./render/scenery').then(({ loadScenery }) => {
+  void loadScenery();
+});
 
 canvas.addEventListener('click', (e) => {
   const hero = renderer.heroAt(e.offsetX, e.offsetY);
