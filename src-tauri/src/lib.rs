@@ -1,3 +1,5 @@
+mod hooks_cli;
+mod hooks_merge;
 mod server;
 mod tray;
 mod window;
@@ -6,6 +8,13 @@ use tauri::Manager;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
+    // CLI subcommands: the binary doubles as the hook installer.
+    match std::env::args().nth(1).as_deref() {
+        Some("install-hooks") => return exit_after(hooks_cli::install()),
+        Some("uninstall-hooks") => return exit_after(hooks_cli::uninstall()),
+        _ => {}
+    }
+
     let mut builder = tauri::Builder::default();
 
     #[cfg(target_os = "macos")]
@@ -36,4 +45,11 @@ pub fn run() {
         })
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
+}
+
+fn exit_after(result: Result<(), String>) {
+    if let Err(message) = result {
+        eprintln!("error: {message}");
+        std::process::exit(1);
+    }
 }
