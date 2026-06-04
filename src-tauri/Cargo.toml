@@ -1,6 +1,6 @@
 [package]
 name = "agent-quest"
-version = "0.1.0"
+version = "0.2.0"
 description = "Rusty's Retirement-style desktop strip that visualizes Claude Code sessions as RPG adventurers"
 authors = ["zodius"]
 edition = "2021"
