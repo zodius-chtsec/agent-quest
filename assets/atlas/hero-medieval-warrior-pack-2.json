@@ -1,0 +1,28 @@
+{
+  "frameW": 150,
+  "frameH": 150,
+  "anchorY": 0.633,
+  "bodyTop": 0.36,
+  "anims": {
+    "idle": {
+      "image": "/heroes/medieval-warrior-pack-2/Medieval%20Warrior%20Pack%202/Sprites/Idle.png",
+      "frames": 8,
+      "fps": 8
+    },
+    "walk": {
+      "image": "/heroes/medieval-warrior-pack-2/Medieval%20Warrior%20Pack%202/Sprites/Run.png",
+      "frames": 8,
+      "fps": 10
+    },
+    "attack": {
+      "image": "/heroes/medieval-warrior-pack-2/Medieval%20Warrior%20Pack%202/Sprites/Attack1.png",
+      "frames": 4,
+      "fps": 12
+    },
+    "hurt": {
+      "image": "/heroes/medieval-warrior-pack-2/Medieval%20Warrior%20Pack%202/Sprites/Take%20Hit.png",
+      "frames": 4,
+      "fps": 10
+    }
+  }
+}

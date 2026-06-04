@@ -46,10 +46,16 @@ setInterval(() => {
 
 renderer.start();
 
-// Best-effort: load real art pack skins (Tiny Swords) if installed.
+// Best-effort: load real art pack skins (Tiny Swords heroes if installed,
+// committed CC0 LuizMelo monsters).
 import('./render/heroSkins').then(({ loadHeroSkins }) => {
   void loadHeroSkins().then((count) => {
     if (count > 0) console.info(`[skins] loaded ${count} hero atlas(es)`);
+  });
+});
+import('./render/monsterSkins').then(({ loadMonsterSkins }) => {
+  void loadMonsterSkins().then((ok) => {
+    if (ok) console.info('[skins] monster atlases loaded');
   });
 });
 

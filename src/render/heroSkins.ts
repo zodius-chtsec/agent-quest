@@ -1,19 +1,19 @@
 /**
- * Hero skins from real art packs. At startup we try to load every faction
- * atlas listed in the manifest; heroes are assigned a loaded skin by their
- * session hash (stable per session). No atlases loaded → procedural art.
+ * Hero skins from the CC0 LuizMelo hero packs (committed to the repo).
+ * Each atlas is a character CLASS; heroes are assigned a loaded skin by
+ * their session hash (stable per session). No atlases loaded → procedural
+ * art fallback.
  */
 
 import { hashString } from '../util/hash';
 import { loadAtlas, type Atlas } from './spritesheet';
 
-/** Committed atlas descriptors; PNGs themselves are gitignored. */
 const SKIN_ATLASES = [
-  '/atlas/warrior-blue.json',
-  '/atlas/warrior-purple.json',
-  '/atlas/warrior-red.json',
-  '/atlas/warrior-yellow.json',
-  '/atlas/warrior-black.json',
+  '/atlas/hero-hero-knight.json',
+  '/atlas/hero-medieval-warrior-pack-2.json',
+  '/atlas/hero-wizard-pack.json',
+  '/atlas/hero-huntress.json',
+  '/atlas/hero-martial-hero.json',
 ];
 
 let skins: Atlas[] = [];

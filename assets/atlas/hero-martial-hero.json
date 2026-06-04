@@ -1,0 +1,28 @@
+{
+  "frameW": 200,
+  "frameH": 200,
+  "anchorY": 0.61,
+  "bodyTop": 0.35,
+  "anims": {
+    "idle": {
+      "image": "/heroes/martial-hero/Martial%20Hero/Sprites/Idle.png",
+      "frames": 8,
+      "fps": 8
+    },
+    "walk": {
+      "image": "/heroes/martial-hero/Martial%20Hero/Sprites/Run.png",
+      "frames": 8,
+      "fps": 10
+    },
+    "attack": {
+      "image": "/heroes/martial-hero/Martial%20Hero/Sprites/Attack1.png",
+      "frames": 6,
+      "fps": 12
+    },
+    "hurt": {
+      "image": "/heroes/martial-hero/Martial%20Hero/Sprites/Take%20Hit.png",
+      "frames": 4,
+      "fps": 10
+    }
+  }
+}

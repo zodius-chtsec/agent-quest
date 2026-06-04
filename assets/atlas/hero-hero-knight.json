@@ -1,0 +1,28 @@
+{
+  "frameW": 180,
+  "frameH": 180,
+  "anchorY": 0.633,
+  "bodyTop": 0.35,
+  "anims": {
+    "idle": {
+      "image": "/heroes/hero-knight/Hero%20Knight/Sprites/Idle.png",
+      "frames": 11,
+      "fps": 8
+    },
+    "walk": {
+      "image": "/heroes/hero-knight/Hero%20Knight/Sprites/Run.png",
+      "frames": 8,
+      "fps": 10
+    },
+    "attack": {
+      "image": "/heroes/hero-knight/Hero%20Knight/Sprites/Attack1.png",
+      "frames": 7,
+      "fps": 12
+    },
+    "hurt": {
+      "image": "/heroes/hero-knight/Hero%20Knight/Sprites/Take%20Hit.png",
+      "frames": 4,
+      "fps": 10
+    }
+  }
+}

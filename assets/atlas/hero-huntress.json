@@ -1,0 +1,28 @@
+{
+  "frameW": 150,
+  "frameH": 150,
+  "anchorY": 0.647,
+  "bodyTop": 0.367,
+  "anims": {
+    "idle": {
+      "image": "/heroes/huntress/Huntress/Sprites/Idle.png",
+      "frames": 8,
+      "fps": 8
+    },
+    "walk": {
+      "image": "/heroes/huntress/Huntress/Sprites/Run.png",
+      "frames": 8,
+      "fps": 10
+    },
+    "attack": {
+      "image": "/heroes/huntress/Huntress/Sprites/Attack1.png",
+      "frames": 5,
+      "fps": 12
+    },
+    "hurt": {
+      "image": "/heroes/huntress/Huntress/Sprites/Take%20hit.png",
+      "frames": 3,
+      "fps": 10
+    }
+  }
+}

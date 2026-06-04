@@ -1,0 +1,10 @@
+{
+  "frameW": 150, "frameH": 150,
+  "anchorY": 0.673, "bodyTop": 0.433, "displayH": 290,
+  "anims": {
+    "idle": { "image": "/monsters/creatures-fantasy/Goblin/Idle.png", "frames": 4, "fps": 8 },
+    "attack": { "image": "/monsters/creatures-fantasy/Goblin/Attack.png", "frames": 8, "fps": 12 },
+    "hit": { "image": "/monsters/creatures-fantasy/Goblin/Take%20Hit.png", "frames": 4, "fps": 10 },
+    "death": { "image": "/monsters/creatures-fantasy/Goblin/Death.png", "frames": 4, "fps": 7 }
+  }
+}

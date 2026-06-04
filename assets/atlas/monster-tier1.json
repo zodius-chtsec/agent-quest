@@ -1,0 +1,10 @@
+{
+  "frameW": 150, "frameH": 150,
+  "anchorY": 0.673, "bodyTop": 0.427, "displayH": 225,
+  "anims": {
+    "idle": { "image": "/monsters/creatures-fantasy/Mushroom/Idle.png", "frames": 4, "fps": 8 },
+    "attack": { "image": "/monsters/creatures-fantasy/Mushroom/Attack.png", "frames": 8, "fps": 12 },
+    "hit": { "image": "/monsters/creatures-fantasy/Mushroom/Take%20Hit.png", "frames": 4, "fps": 10 },
+    "death": { "image": "/monsters/creatures-fantasy/Mushroom/Death.png", "frames": 4, "fps": 7 }
+  }
+}

@@ -1,0 +1,28 @@
+{
+  "frameW": 231,
+  "frameH": 190,
+  "anchorY": 0.742,
+  "bodyTop": 0.289,
+  "anims": {
+    "idle": {
+      "image": "/heroes/wizard-pack/Wizard%20Pack/Idle.png",
+      "frames": 6,
+      "fps": 8
+    },
+    "walk": {
+      "image": "/heroes/wizard-pack/Wizard%20Pack/Run.png",
+      "frames": 8,
+      "fps": 10
+    },
+    "attack": {
+      "image": "/heroes/wizard-pack/Wizard%20Pack/Attack1.png",
+      "frames": 8,
+      "fps": 12
+    },
+    "hurt": {
+      "image": "/heroes/wizard-pack/Wizard%20Pack/Hit.png",
+      "frames": 4,
+      "fps": 10
+    }
+  }
+}

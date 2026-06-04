@@ -1,0 +1,10 @@
+{
+  "frameW": 150, "frameH": 150,
+  "anchorY": 0.673, "bodyTop": 0.333, "displayH": 265,
+  "anims": {
+    "idle": { "image": "/monsters/creatures-fantasy/Skeleton/Idle.png", "frames": 4, "fps": 8 },
+    "attack": { "image": "/monsters/creatures-fantasy/Skeleton/Attack.png", "frames": 8, "fps": 12 },
+    "hit": { "image": "/monsters/creatures-fantasy/Skeleton/Take%20Hit.png", "frames": 4, "fps": 10 },
+    "death": { "image": "/monsters/creatures-fantasy/Skeleton/Death.png", "frames": 4, "fps": 7 }
+  }
+}

@@ -16,7 +16,7 @@
  */
 
 export interface AtlasAnim {
-  readonly image: HTMLImageElement;
+  readonly image: HTMLImageElement | HTMLCanvasElement;
   readonly frames: number;
   readonly fps: number;
 }
@@ -28,6 +28,8 @@ export interface Atlas {
   readonly anchorY: number;
   /** Fraction of frame height where the character's head starts (default 0). */
   readonly bodyTop: number;
+  /** Suggested on-screen frame height in px (optional sizing hint). */
+  readonly displayH?: number;
   readonly anims: Readonly<Record<string, AtlasAnim>>;
 }
 
@@ -86,6 +88,7 @@ export async function loadAtlas(url: string): Promise<Atlas | null> {
       frameH: meta.frameH,
       anchorY: typeof meta.anchorY === 'number' ? meta.anchorY : 1,
       bodyTop: typeof meta.bodyTop === 'number' ? meta.bodyTop : 0,
+      displayH: typeof meta.displayH === 'number' ? meta.displayH : undefined,
       anims,
     };
   } catch {
@@ -107,9 +110,12 @@ export function drawAtlasFrame(
   feetY: number,
   targetH: number,
   flip: boolean,
+  /** One-shot animations clamp to the last frame instead of looping. */
+  once = false,
 ): void {
   const anim = atlas.anims[animName] ?? Object.values(atlas.anims)[0];
-  const frame = Math.floor((clockMs / 1000) * anim.fps) % anim.frames;
+  const raw = Math.floor((clockMs / 1000) * anim.fps);
+  const frame = once ? Math.min(raw, anim.frames - 1) : raw % anim.frames;
   const sx = frame * atlas.frameW;
   const scale = targetH / atlas.frameH;
   const targetW = atlas.frameW * scale;

@@ -1,0 +1,10 @@
+{
+  "frameW": 150, "frameH": 150,
+  "anchorY": 0.613, "bodyTop": 0.407, "displayH": 220,
+  "anims": {
+    "idle": { "image": "/monsters/creatures-fantasy/Flying%20eye/Flight.png", "frames": 8, "fps": 10 },
+    "attack": { "image": "/monsters/creatures-fantasy/Flying%20eye/Attack.png", "frames": 8, "fps": 12 },
+    "hit": { "image": "/monsters/creatures-fantasy/Flying%20eye/Take%20Hit.png", "frames": 4, "fps": 10 },
+    "death": { "image": "/monsters/creatures-fantasy/Flying%20eye/Death.png", "frames": 4, "fps": 7 }
+  }
+}

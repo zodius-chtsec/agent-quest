@@ -10,6 +10,7 @@ import { Effects } from './effects';
 import { skinFor } from './heroSkins';
 import { assignSlots, overflowCount, type SlotAssignment } from './layout';
 import { MonsterEntity, MONSTER_OFFSET } from './monsterEntity';
+import { monsterSkin } from './monsterSkins';
 import { monsterSprites } from './monsterSprites';
 import { bodyForState, HAND_X, HAND_Y, HERO_SIZE } from './sprites';
 import { drawAtlasFrame, type Atlas } from './spritesheet';
@@ -250,9 +251,10 @@ export class Renderer {
     const skin = skinFor(hero.id);
     if (skin) {
       const anim = atlasAnimForState(s.state, walking, skin);
-      // Frame height such that the character body reads ~1.5x the
-      // procedural heroes; anchorY plants the feet on the ground line.
-      const targetH = size * 3.2;
+      // Normalize across packs: pick the frame height that renders the
+      // BODY (bodyTop..anchorY) at a consistent on-screen size, so the
+      // wizard and the knight stand equally tall.
+      const targetH = (size * 1.6) / Math.max(0.2, skin.anchorY - skin.bodyTop);
       drawAtlasFrame(
         ctx,
         skin,
@@ -323,8 +325,30 @@ export class Renderer {
 
   private drawMonster(monster: MonsterEntity, groundTop: number, _now: number): void {
     const { ctx } = this;
-    const sprite = monsterSprites(monster.info.species)[monster.info.tier];
     const feetY = groundTop + 6;
+
+    // Real art pack (LuizMelo, CC0) takes priority over procedural art.
+    const skin = monsterSkin(monster.info.species, monster.info.tier);
+    if (skin) {
+      const { name, clock, once } = monster.atlasAnim();
+      const targetH = skin.displayH ?? 200;
+      const centerX = monster.x + 36 + monster.lungeOffset;
+      const deathT = monster.deathT;
+      ctx.save();
+      // Fade out at the tail of the death animation.
+      if (deathT > 0.7) ctx.globalAlpha = 1 - (deathT - 0.7) / 0.3;
+      // flip=true: pack sprites face right; our monsters face the hero.
+      drawAtlasFrame(ctx, skin, name, clock, centerX, feetY, targetH, true, once);
+      ctx.restore();
+      if (monster.info.state === 'FIGHTING') {
+        const barW = 56;
+        const barY = feetY - targetH * (skin.anchorY - skin.bodyTop) - 10;
+        this.drawTierBar(monster, centerX - barW / 2, barY, barW);
+      }
+      return;
+    }
+
+    const sprite = monsterSprites(monster.info.species)[monster.info.tier];
     const bounce = monster.frame(2, 420);
     const img = sprite.frames[bounce];
     const x = monster.x + monster.lungeOffset;

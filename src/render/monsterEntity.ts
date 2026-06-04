@@ -11,9 +11,10 @@
 import type { MonsterInfo } from '../types';
 
 export const MONSTER_OFFSET = 96; // px right of the hero's slot
-const DEATH_MS = 600;
-const LUNGE_MS = 320;
+const DEATH_MS = 600; // 4 death frames @ ~7fps, then gone
+const LUNGE_MS = 660; // full 8-frame attack swing @ 12fps
 const FLASH_MS = 120;
+const HIT_ANIM_MS = 400; // 4 take-hit frames @ 10fps
 
 export class MonsterEntity {
   readonly sessionId: string;
@@ -28,6 +29,7 @@ export class MonsterEntity {
   private deathClock = 0;
   private flashMs = 0;
   private lungeMs = 0;
+  private hitAnimMs = 0;
   gone = false;
 
   constructor(info: MonsterInfo) {
@@ -37,9 +39,10 @@ export class MonsterEntity {
     this.renderedHits = info.hits;
   }
 
-  /** Trigger the hit flash (renderer detected new damage). */
+  /** Trigger the hit flash + take-hit animation (new damage landed). */
   flash(): void {
     this.flashMs = FLASH_MS;
+    this.hitAnimMs = HIT_ANIM_MS;
   }
 
   /** Trigger the counterattack lunge toward the hero. */
@@ -51,10 +54,28 @@ export class MonsterEntity {
     this.animClock += dt;
     this.flashMs = Math.max(0, this.flashMs - dt);
     this.lungeMs = Math.max(0, this.lungeMs - dt);
+    this.hitAnimMs = Math.max(0, this.hitAnimMs - dt);
     if (this.info.state === 'DYING') {
       this.deathClock += dt;
       if (this.deathClock >= DEATH_MS) this.gone = true;
     }
+  }
+
+  /**
+   * Which atlas animation to show right now, with a clock that starts at 0
+   * when the one-shot was triggered (so it plays from its first frame).
+   */
+  atlasAnim(): { name: string; clock: number; once: boolean } {
+    if (this.info.state === 'DYING') {
+      return { name: 'death', clock: this.deathClock, once: true };
+    }
+    if (this.lungeMs > 0) {
+      return { name: 'attack', clock: LUNGE_MS - this.lungeMs, once: true };
+    }
+    if (this.hitAnimMs > 0) {
+      return { name: 'hit', clock: HIT_ANIM_MS - this.hitAnimMs, once: true };
+    }
+    return { name: 'idle', clock: this.animClock, once: false };
   }
 
   /** 0..1 death progress (squash + fade). */
