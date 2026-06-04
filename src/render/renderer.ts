@@ -12,18 +12,26 @@ import { assignSlots, overflowCount, type SlotAssignment } from './layout';
 import { MonsterEntity, MONSTER_OFFSET } from './monsterEntity';
 import { monsterSkin } from './monsterSkins';
 import { monsterSprites } from './monsterSprites';
+import { campfireAtlas } from './props';
 import { bodyForState, HAND_X, HAND_Y, HERO_SIZE } from './sprites';
 import { drawScenery } from './scenery';
 import { drawAtlasFrame, type Atlas } from './spritesheet';
 import { drawIsland, GROUND_HEIGHT, renderDecorations, renderTerrain } from './terrain';
 
-/** Map hero state to an atlas animation, with graceful fallbacks. */
-function atlasAnimForState(state: HeroState, walking: boolean, atlas: Atlas): string {
+/**
+ * Map hero state to an atlas animation. Attacks are one-shot swings
+ * triggered per landed hit (not a loop), so WORKING idles between hits.
+ */
+function atlasAnimForState(
+  state: HeroState,
+  walking: boolean,
+  attacking: boolean,
+  atlas: Atlas,
+): string {
   const pick = (...names: string[]) => names.find((n) => atlas.anims[n]) ?? 'idle';
   if (walking) return pick('walk', 'run', 'idle');
+  if (attacking) return pick('attack', 'idle');
   switch (state) {
-    case 'WORKING':
-      return pick('attack', 'idle');
     case 'HURT':
       return pick('hurt', 'guard', 'idle');
     case 'ATTENTION':
@@ -34,10 +42,18 @@ function atlasAnimForState(state: HeroState, walking: boolean, atlas: Atlas): st
   }
 }
 
+/** Duration of one full attack swing for a skin (frames / fps). */
+function attackDurationMs(atlas: Atlas | null): number {
+  const anim = atlas?.anims.attack;
+  return anim ? (anim.frames / anim.fps) * 1000 : 600;
+}
+
+/** Fraction of the swing at which the blow visually connects. */
+const IMPACT_POINT = 0.65;
+
 const TARGET_FRAME_MS = 1000 / 30;
 const IDLE_FRAME_MS = 500;
 const WALK_FRAME_MS = 150;
-const ACTION_FRAME_MS = 260;
 
 export class Renderer {
   private readonly canvas: HTMLCanvasElement;
@@ -123,6 +139,7 @@ export class Renderer {
 
     this.syncHeroes();
     this.syncMonsters(timestamp);
+    this.fireImpacts(timestamp);
     for (const hero of this.heroes.values()) {
       hero.update(dt, this.canvas.width);
       if (hero.gone) {
@@ -168,6 +185,20 @@ export class Renderer {
 
   private overflow = 0;
 
+  /** Scheduled blow connections: damage number + monster flinch. */
+  private pendingImpacts: Array<{ at: number; monsterId: string; x: number; y: number }> = [];
+
+  private fireImpacts(now: number): void {
+    if (this.pendingImpacts.length === 0) return;
+    const due = this.pendingImpacts.filter((i) => i.at <= now);
+    if (due.length === 0) return;
+    this.pendingImpacts = this.pendingImpacts.filter((i) => i.at > now);
+    for (const impact of due) {
+      this.effects.addDamage(impact.x, impact.y, now);
+      this.monsters.get(impact.monsterId)?.flash();
+    }
+  }
+
   private syncMonsters(now: number): void {
     const infos = this.getMonsters();
     const liveIds = new Set<string>();
@@ -189,10 +220,18 @@ export class Renderer {
       const centerX = entity.x + sprite.width / 2;
       const topY = groundTop + 6 - sprite.height;
 
-      // New hits since last frame → damage number + hit flash.
+      // New hits since last frame → the hero swings ONCE; the damage
+      // number and the monster's flinch land at the swing's impact frame.
       if (info.hits > entity.renderedHits) {
-        this.effects.addDamage(centerX, topY + 6, now);
-        entity.flash();
+        const hero = this.heroes.get(info.sessionId);
+        const duration = attackDurationMs(hero ? skinFor(hero.id) : null);
+        hero?.triggerAttack(duration);
+        this.pendingImpacts.push({
+          at: now + duration * IMPACT_POINT,
+          monsterId: info.sessionId,
+          x: centerX,
+          y: topY + 6,
+        });
         entity.renderedHits = info.hits;
       }
       // Counterattack (tool failure) → lunge toward the hero.
@@ -262,7 +301,8 @@ export class Renderer {
     // always-available fallback.
     const skin = skinFor(hero.id);
     if (skin) {
-      const anim = atlasAnimForState(s.state, walking, skin);
+      const attacking = hero.attacking && !walking;
+      const anim = atlasAnimForState(s.state, walking, attacking, skin);
       // Normalize across packs: pick the frame height that renders the
       // BODY (bodyTop..anchorY) at a consistent on-screen size, so the
       // wizard and the knight stand equally tall.
@@ -271,11 +311,12 @@ export class Renderer {
         ctx,
         skin,
         anim,
-        hero.animClock,
+        attacking ? hero.attackClock : hero.animClock,
         hero.x + size / 2,
         feetY,
         targetH,
         hero.facing === -1,
+        attacking, // one-shot: clamp to the final frame, no looping
       );
       const bodyTopY = feetY - targetH * (skin.anchorY - skin.bodyTop);
       this.drawHeroBadges(hero, bodyTopY, feetY);
@@ -298,10 +339,13 @@ export class Renderer {
       ctx.translate(hero.x, 0);
     }
     ctx.drawImage(body, 0, topY, size, size);
-    if (s.state === 'WORKING' && !walking) {
+    // Procedural fallback: the hand-item swing plays once per landed hit,
+    // frame indexed by swing progress so it finishes exactly on impact+follow-through.
+    if (hero.attacking && !walking) {
       const item = hero.sprites.items[s.action];
       if (item) {
-        const img = item.frames[hero.frame(item.frames.length, ACTION_FRAME_MS)];
+        const progress = Math.min(0.999, hero.attackClock / Math.max(1, attackDurationMs(null)));
+        const img = item.frames[Math.floor(progress * item.frames.length)];
         const scale = size / HERO_SIZE; // companions are drawn smaller
         ctx.drawImage(
           img,
@@ -322,8 +366,13 @@ export class Renderer {
     const s = hero.session;
     const size = hero.width;
     if (s.state === 'IDLE' && !hero.walking) {
-      const fire = hero.sprites.campfire[hero.frame(2, 400)];
-      ctx.drawImage(fire, hero.x - fire.width - 6, feetY - fire.height);
+      const fire = campfireAtlas();
+      if (fire) {
+        drawAtlasFrame(ctx, fire, 'burn', hero.animClock, hero.x - 26, feetY, 40, false);
+      } else {
+        const img = hero.sprites.campfire[hero.frame(2, 400)];
+        ctx.drawImage(img, hero.x - img.width - 6, feetY - img.height);
+      }
       ctx.fillStyle = 'rgba(255,255,255,0.7)';
       ctx.font = '11px monospace';
       const zPhase = hero.frame(3, 600);

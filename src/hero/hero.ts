@@ -19,6 +19,9 @@ export class Hero {
   targetX: number;
   facing: 1 | -1 = 1;
   animClock = 0;
+  /** One-shot attack swing: remaining ms and total duration. */
+  private attackMs = 0;
+  private attackDuration = 0;
   /** True once a LEAVING hero has fully walked off screen. */
   gone = false;
 
@@ -34,8 +37,24 @@ export class Hero {
     return Math.abs(this.x - this.targetX) > 2;
   }
 
+  /** Start a single attack swing of the given duration (restarts if mid-swing). */
+  triggerAttack(durationMs: number): void {
+    this.attackMs = durationMs;
+    this.attackDuration = durationMs;
+  }
+
+  get attacking(): boolean {
+    return this.attackMs > 0;
+  }
+
+  /** Elapsed time within the current swing, for one-shot frame selection. */
+  get attackClock(): number {
+    return this.attackDuration - this.attackMs;
+  }
+
   update(dt: number, stripWidth: number): void {
     this.animClock += dt;
+    this.attackMs = Math.max(0, this.attackMs - dt);
 
     if (this.session.state === 'LEAVING') {
       this.targetX = stripWidth + OFFSCREEN_PAD;

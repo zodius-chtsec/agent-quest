@@ -1,0 +1,9 @@
+{
+  "frameW": 32,
+  "frameH": 32,
+  "anchorY": 0.94,
+  "bodyTop": 0.1,
+  "anims": {
+    "burn": { "image": "/environment/campfire/campfire-sprite-sheet.png", "frames": 4, "fps": 8 }
+  }
+}

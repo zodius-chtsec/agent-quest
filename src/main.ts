@@ -66,6 +66,9 @@ import('./render/terrain').then(({ loadTerrainArt }) => {
 import('./render/scenery').then(({ loadScenery }) => {
   void loadScenery();
 });
+import('./render/props').then(({ loadProps }) => {
+  void loadProps();
+});
 
 canvas.addEventListener('click', (e) => {
   const hero = renderer.heroAt(e.offsetX, e.offsetY);
