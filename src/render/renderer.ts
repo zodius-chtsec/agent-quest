@@ -143,7 +143,6 @@ export class Renderer {
     const infos = this.getMonsters();
     const liveIds = new Set<string>();
     const groundTop = this.canvas.height - GROUND_HEIGHT;
-    const sprites = monsterSprites();
 
     for (const info of infos) {
       const slot = this.slots.get(info.sessionId);
@@ -157,7 +156,7 @@ export class Renderer {
       }
       entity.x = slot.targetX + MONSTER_OFFSET;
 
-      const sprite = sprites[info.tier];
+      const sprite = monsterSprites(info.species)[info.tier];
       const centerX = entity.x + sprite.width / 2;
       const topY = groundTop + 6 - sprite.height;
 
@@ -277,7 +276,7 @@ export class Renderer {
 
   private drawMonster(monster: MonsterEntity, groundTop: number, _now: number): void {
     const { ctx } = this;
-    const sprite = monsterSprites()[monster.info.tier];
+    const sprite = monsterSprites(monster.info.species)[monster.info.tier];
     const feetY = groundTop + 6;
     const bounce = monster.frame(2, 420);
     const img = sprite.frames[bounce];

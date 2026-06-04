@@ -46,6 +46,8 @@ export interface MonsterInfo {
   readonly sessionId: string;
   readonly state: MonsterState;
   readonly tier: MonsterTier;
+  /** Elemental family (palette), rolled at spawn time. */
+  readonly species: number;
   /** Total hits landed (tool calls) across the whole fight. */
   readonly hits: number;
   /** 0..1 progress toward the next evolution (1 = max tier reached). */

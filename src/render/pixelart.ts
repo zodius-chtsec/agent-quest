@@ -4,6 +4,10 @@
  * sheets (e.g. Tiny Swords), when downloaded, take priority over these.
  */
 
+import { hashString } from '../util/hash';
+
+export { hashString };
+
 export type Palette = Record<string, string>;
 
 /** Rasterize an ASCII pixel map ('.'=transparent) into an offscreen canvas. */
@@ -25,16 +29,6 @@ export function rasterize(map: readonly string[], palette: Palette, scale = 1): 
     }
   }
   return canvas;
-}
-
-/** Deterministic 32-bit hash for per-session color theming. */
-export function hashString(input: string): number {
-  let h = 2166136261;
-  for (let i = 0; i < input.length; i++) {
-    h ^= input.charCodeAt(i);
-    h = Math.imul(h, 16777619);
-  }
-  return h >>> 0;
 }
 
 /** Pick a stable accent hue for a session id. */

@@ -6,12 +6,15 @@
  */
 
 import type { MonsterInfo, MonsterTier, QuestEvent } from '../types';
+import { hashString } from '../util/hash';
 
 /** Cumulative hits needed to REACH each tier (index = tier). */
 export const TIER_THRESHOLDS = [0, 8, 20, 40] as const;
 export const TIER_NAMES = ['Slime', 'Goblin', 'Ogre', 'Dragon'] as const;
 /** Safety GC: corpses linger at most this long if the renderer stalls. */
 export const CORPSE_TTL_MS = 10_000;
+/** Number of elemental families (must match monsterSprites FAMILIES). */
+export const SPECIES_COUNT = 5;
 
 export function tierForHits(hits: number): MonsterTier {
   let tier: MonsterTier = 0;
@@ -37,6 +40,9 @@ function spawn(sessionId: string, now: number): MonsterInfo {
     sessionId,
     state: 'FIGHTING',
     tier: 0,
+    // Deterministic per (session, moment): each new fight rolls a fresh
+    // elemental family without needing Math.random in a pure function.
+    species: ((hashString(sessionId) ^ now) >>> 0) % SPECIES_COUNT,
     hits: 0,
     tierProgress: 0,
     spawnedAt: now,

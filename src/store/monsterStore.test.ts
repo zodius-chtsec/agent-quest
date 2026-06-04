@@ -3,6 +3,7 @@ import {
   applyMonsterEvent,
   CORPSE_TTL_MS,
   removeMonster,
+  SPECIES_COUNT,
   tickMonsters,
   tierForHits,
   tierProgressForHits,
@@ -114,6 +115,21 @@ describe('applyMonsterEvent', () => {
     let monsters = fight(2);
     monsters = applyMonsterEvent(monsters, ev({ kind: 'session-end' }), T0 + 99);
     expect(monsters.size).toBe(0);
+  });
+
+  it('rolls a species in range, deterministically, varying across spawns', () => {
+    const a = applyMonsterEvent(new Map(), ev({ kind: 'prompt' }), T0).get('s1')!;
+    const b = applyMonsterEvent(new Map(), ev({ kind: 'prompt' }), T0).get('s1')!;
+    expect(a.species).toBe(b.species); // same inputs → same roll
+    expect(a.species).toBeGreaterThanOrEqual(0);
+    expect(a.species).toBeLessThan(SPECIES_COUNT);
+
+    // Across many spawn moments, more than one family shows up.
+    const seen = new Set<number>();
+    for (let t = 0; t < 50; t++) {
+      seen.add(applyMonsterEvent(new Map(), ev({ kind: 'prompt' }), T0 + t).get('s1')!.species);
+    }
+    expect(seen.size).toBeGreaterThan(1);
   });
 
   it('never mutates the input map', () => {
