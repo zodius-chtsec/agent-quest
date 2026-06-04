@@ -5,8 +5,11 @@
  */
 
 import { Hero } from '../hero/hero';
-import type { SessionInfo } from '../types';
-import { assignSlots, overflowCount } from './layout';
+import type { MonsterInfo, SessionInfo } from '../types';
+import { Effects } from './effects';
+import { assignSlots, overflowCount, type SlotAssignment } from './layout';
+import { MonsterEntity, MONSTER_OFFSET } from './monsterEntity';
+import { monsterSprites } from './monsterSprites';
 import { bodyForState, HAND_X, HAND_Y, HERO_SIZE } from './sprites';
 import { GROUND_HEIGHT, renderTerrain } from './terrain';
 
@@ -20,21 +23,30 @@ export class Renderer {
   private readonly ctx: CanvasRenderingContext2D;
   private terrain: HTMLCanvasElement;
   private readonly heroes = new Map<string, Hero>();
+  private readonly monsters = new Map<string, MonsterEntity>();
+  private readonly effects = new Effects();
+  private slots = new Map<string, SlotAssignment>();
   private lastFrame = 0;
   private rafId = 0;
   private getSessions: () => readonly SessionInfo[];
+  private getMonsters: () => readonly MonsterInfo[];
   private onHeroGone: (id: string) => void;
+  private onMonsterGone: (sessionId: string) => void;
 
   constructor(
     canvas: HTMLCanvasElement,
     getSessions: () => readonly SessionInfo[],
+    getMonsters: () => readonly MonsterInfo[],
     onHeroGone: (id: string) => void,
+    onMonsterGone: (sessionId: string) => void,
   ) {
     this.canvas = canvas;
     this.ctx = canvas.getContext('2d')!;
     this.ctx.imageSmoothingEnabled = false;
     this.getSessions = getSessions;
+    this.getMonsters = getMonsters;
     this.onHeroGone = onHeroGone;
+    this.onMonsterGone = onMonsterGone;
     this.terrain = renderTerrain(canvas.width);
 
     window.addEventListener('resize', () => this.resize());
@@ -81,6 +93,7 @@ export class Renderer {
     this.lastFrame = timestamp;
 
     this.syncHeroes();
+    this.syncMonsters(timestamp);
     for (const hero of this.heroes.values()) {
       hero.update(dt, this.canvas.width);
       if (hero.gone) {
@@ -88,17 +101,24 @@ export class Renderer {
         this.onHeroGone(hero.id);
       }
     }
+    for (const monster of this.monsters.values()) {
+      monster.update(dt);
+      if (monster.gone) {
+        this.monsters.delete(monster.sessionId);
+        this.onMonsterGone(monster.sessionId);
+      }
+    }
     this.draw();
   }
 
   private syncHeroes(): void {
     const sessions = this.getSessions();
-    const slots = assignSlots(sessions, this.canvas.width);
+    this.slots = assignSlots(sessions, this.canvas.width);
     const liveIds = new Set<string>();
 
     for (const session of sessions) {
       liveIds.add(session.id);
-      const slot = slots.get(session.id);
+      const slot = this.slots.get(session.id);
       if (!slot?.visible) continue;
       let hero = this.heroes.get(session.id);
       if (!hero) {
@@ -114,20 +134,81 @@ export class Renderer {
         hero.session = { ...hero.session, state: 'LEAVING' };
       }
     }
-    this.overflow = overflowCount(slots);
+    this.overflow = overflowCount(this.slots);
   }
 
   private overflow = 0;
 
+  private syncMonsters(now: number): void {
+    const infos = this.getMonsters();
+    const liveIds = new Set<string>();
+    const groundTop = this.canvas.height - GROUND_HEIGHT;
+    const sprites = monsterSprites();
+
+    for (const info of infos) {
+      const slot = this.slots.get(info.sessionId);
+      if (!slot?.visible) continue;
+      liveIds.add(info.sessionId);
+
+      let entity = this.monsters.get(info.sessionId);
+      if (!entity) {
+        entity = new MonsterEntity(info);
+        this.monsters.set(info.sessionId, entity);
+      }
+      entity.x = slot.targetX + MONSTER_OFFSET;
+
+      const sprite = sprites[info.tier];
+      const centerX = entity.x + sprite.width / 2;
+      const topY = groundTop + 6 - sprite.height;
+
+      // New hits since last frame → damage number + hit flash.
+      if (info.hits > entity.renderedHits) {
+        this.effects.addDamage(centerX, topY + 6, now);
+        entity.flash();
+        entity.renderedHits = info.hits;
+      }
+      // Counterattack (tool failure) → lunge toward the hero.
+      if (info.lastCounterAt > entity.info.lastCounterAt) {
+        entity.lunge();
+      }
+      // Evolution → poof at the monster's center.
+      if (info.tier > entity.renderedTier) {
+        this.effects.addPoof(centerX, topY + sprite.height / 2, now);
+        entity.renderedTier = info.tier;
+      }
+      // Kill → loot burst, exactly once.
+      if (info.state === 'DYING' && entity.info.state !== 'DYING') {
+        this.effects.addLoot(centerX, topY + sprite.height / 2, now);
+      }
+      entity.info = info;
+
+      // The hero squares up to a live foe.
+      const hero = this.heroes.get(info.sessionId);
+      if (hero && !hero.walking && info.state === 'FIGHTING') hero.facing = 1;
+    }
+
+    // Monsters gone from the store (session-end): vanish immediately.
+    for (const entity of this.monsters.values()) {
+      if (!liveIds.has(entity.sessionId) && entity.info.state !== 'DYING') {
+        this.monsters.delete(entity.sessionId);
+      }
+    }
+  }
+
   private draw(): void {
     const { ctx, canvas } = this;
     const groundTop = canvas.height - GROUND_HEIGHT;
+    const now = performance.now();
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     ctx.drawImage(this.terrain, 0, groundTop);
 
+    for (const monster of this.monsters.values()) {
+      this.drawMonster(monster, groundTop, now);
+    }
     for (const hero of this.heroes.values()) {
       this.drawHero(hero, groundTop);
     }
+    this.effects.draw(ctx, now);
 
     if (this.overflow > 0) {
       ctx.fillStyle = 'rgba(0,0,0,0.6)';
@@ -192,6 +273,44 @@ export class Renderer {
     }
 
     this.drawNameTag(hero, topY);
+  }
+
+  private drawMonster(monster: MonsterEntity, groundTop: number, _now: number): void {
+    const { ctx } = this;
+    const sprite = monsterSprites()[monster.info.tier];
+    const feetY = groundTop + 6;
+    const bounce = monster.frame(2, 420);
+    const img = sprite.frames[bounce];
+    const x = monster.x + monster.lungeOffset;
+    const deathT = monster.deathT;
+
+    ctx.save();
+    if (deathT > 0) {
+      // Squash into the ground and fade out.
+      ctx.globalAlpha = 1 - deathT;
+      const squashH = sprite.height * (1 - deathT * 0.8);
+      ctx.drawImage(img, x, feetY - squashH, sprite.width, squashH);
+    } else {
+      ctx.drawImage(img, x, feetY - sprite.height);
+      if (monster.flashing) {
+        ctx.globalAlpha = 0.7;
+        ctx.drawImage(sprite.flash, x, feetY - sprite.height);
+        ctx.globalAlpha = 1;
+      }
+      this.drawTierBar(monster, x, feetY - sprite.height - 8, sprite.width);
+    }
+    ctx.restore();
+  }
+
+  /** Evolution progress bar; fills toward the next tier. */
+  private drawTierBar(monster: MonsterEntity, x: number, y: number, width: number): void {
+    const { ctx } = this;
+    const { tier, tierProgress } = monster.info;
+    ctx.fillStyle = 'rgba(0,0,0,0.5)';
+    ctx.fillRect(x, y, width, 4);
+    const colors = ['#7bc950', '#caa53d', '#d2763f', '#d23f3f'];
+    ctx.fillStyle = colors[tier];
+    ctx.fillRect(x, y, width * (tier === 3 ? 1 : tierProgress), 4);
   }
 
   private drawNameTag(hero: Hero, topY: number): void {

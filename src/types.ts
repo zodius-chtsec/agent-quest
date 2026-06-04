@@ -35,6 +35,29 @@ export interface QuestEvent {
   readonly fullyIdle?: boolean;
 }
 
+/** Monster evolution tiers: slime → goblin → ogre → dragon. */
+export type MonsterTier = 0 | 1 | 2 | 3;
+
+export type MonsterState = 'FIGHTING' | 'DYING';
+
+/** One monster per main session, representing the current task (turn). */
+export interface MonsterInfo {
+  /** Same as the owning session's id (main sessions only). */
+  readonly sessionId: string;
+  readonly state: MonsterState;
+  readonly tier: MonsterTier;
+  /** Total hits landed (tool calls) across the whole fight. */
+  readonly hits: number;
+  /** 0..1 progress toward the next evolution (1 = max tier reached). */
+  readonly tierProgress: number;
+  readonly spawnedAt: number;
+  /** Timestamp of the most recent hit, for hit-flash effects. */
+  readonly lastHitAt: number;
+  /** Timestamp of the monster's last counterattack (tool failure). */
+  readonly lastCounterAt: number;
+  readonly diedAt?: number;
+}
+
 /** A live session (or subagent) shown as one hero on the strip. */
 export interface SessionInfo {
   /** session_id, or `${session_id}:${agent_id}` for subagent companions. */

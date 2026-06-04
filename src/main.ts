@@ -2,6 +2,12 @@ import { startDemo } from './demo';
 import { Renderer } from './render/renderer';
 import { hidePopup, showPopup } from './ui/popup';
 import {
+  applyMonsterEvent,
+  removeMonster,
+  tickMonsters,
+  type MonsterMap,
+} from './store/monsterStore';
+import {
   applyEvent,
   remove,
   tick,
@@ -12,21 +18,30 @@ import type { QuestEvent } from './types';
 const canvas = document.getElementById('strip') as HTMLCanvasElement;
 
 let sessions: SessionMap = new Map();
+let monsters: MonsterMap = new Map();
 
 function emit(event: QuestEvent): void {
-  sessions = applyEvent(sessions, event, Date.now());
+  const now = Date.now();
+  sessions = applyEvent(sessions, event, now);
+  monsters = applyMonsterEvent(monsters, event, now);
 }
 
 const renderer = new Renderer(
   canvas,
   () => [...sessions.values()],
+  () => [...monsters.values()],
   (id) => {
     sessions = remove(sessions, id);
+  },
+  (sessionId) => {
+    monsters = removeMonster(monsters, sessionId);
   },
 );
 
 setInterval(() => {
-  sessions = tick(sessions, Date.now());
+  const now = Date.now();
+  sessions = tick(sessions, now);
+  monsters = tickMonsters(monsters, now);
 }, 5_000);
 
 renderer.start();

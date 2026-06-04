@@ -6,7 +6,7 @@
 import type { SessionInfo } from '../types';
 
 export const MAX_HEROES = 12;
-const SLOT_WIDTH = 150;
+const SLOT_WIDTH = 190; // hero + companion + monster (up to dragon width)
 const LEFT_MARGIN = 60;
 const COMPANION_OFFSET = 56;
 
