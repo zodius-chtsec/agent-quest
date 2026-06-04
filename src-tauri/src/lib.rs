@@ -1,3 +1,4 @@
+mod server;
 mod tray;
 mod window;
 
@@ -26,6 +27,11 @@ pub fn run() {
             window::make_nonactivating_panel(handle);
             window::watch_monitor_changes(handle);
             tray::setup(handle)?;
+
+            match server::start(handle.clone()) {
+                Ok(port) => println!("[server] listening on 127.0.0.1:{port}"),
+                Err(err) => eprintln!("[server] failed to start: {err}"),
+            }
             Ok(())
         })
         .run(tauri::generate_context!())
