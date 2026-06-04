@@ -47,7 +47,8 @@ Each Claude Code session is one adventurer (named after its project directory):
 ### Option 2: Homebrew
 
 ```bash
-brew install --cask --no-quarantine zodius-chtsec/tap/agent-quest
+brew install --cask zodius-chtsec/tap/agent-quest
+xattr -cr /Applications/agent-quest.app   # unsigned app: required once
 ```
 
 ### Option 3: From source
