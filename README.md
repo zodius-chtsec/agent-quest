@@ -97,10 +97,15 @@ Environment:
 
 ## Art
 
-Ships with built-in procedural pixel art (zero downloads). Optionally upgrade
-to [Tiny Swords](https://pixelfrog-assets.itch.io/tiny-swords) by Pixel Frog —
-see `scripts/fetch-assets.sh`; those files are gitignored because the pack may
-not be redistributed.
+All art ships in the repo — no downloads needed:
+
+- Heroes & monsters: [LuizMelo](https://luizmelo.itch.io/) packs (CC0)
+- Terrain & background: [Magic Cliffs / Mountain Dusk](https://ansimuz.itch.io/)
+  by ansimuz (redistribution permitted)
+- Campfire: [OpenGameArt](https://opengameart.org/content/campfire-pixel-art-animated) (CC0)
+
+Procedural pixel art remains as an automatic fallback. Thanks to all the
+artists — consider supporting them!
 
 ## Known limitations
 
